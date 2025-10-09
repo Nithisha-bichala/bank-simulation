@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    
+    <Appenders>
+        <!-- Console Appender: Sends logs to standard output -->
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <!-- File Appender: Writes all logs to a static file -->
+        <File name="FileAppender" fileName="logs/bank.log" append="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5level - %msg%n"/>
+        </File>
+    </Appenders>
+
+    <Loggers>
+        <!-- Logger for JDBC/SQL debugging (helpful for debugging transactions) -->
+        <!-- Set level="debug" to see details about connections and queries -->
+        <Logger name="java.sql" level="info" additivity="false">
+             <AppenderRef ref="ConsoleAppender"/>
+             <AppenderRef ref="FileAppender"/>
+        </Logger>
+        
+        <!-- Root Logger configuration: Catches all application-level messages -->
+        <Root level="info">
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+        </Root>
+    </Loggers>
+</Configuration>
