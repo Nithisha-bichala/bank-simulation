@@ -25,7 +25,8 @@ public class CustomerTable {
                 "modified_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
                 "gender VARCHAR(10)," +
                 "father_name VARCHAR(100)," +
-                "mother_name VARCHAR(100)" +
+                "mother_name VARCHAR(100)," +
+                "mpin VARCHAR(4) NOT NULL" +      
                 ")";
 
         try (Connection conn = DBConnection.getConnection();

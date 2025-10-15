@@ -20,6 +20,7 @@ public class Customer {
     private String gender;
     private String fatherName;
     private String motherName;
+    private String mpin; 
 
     // Getters & Setters
     public int getCustomerId() {
@@ -139,5 +140,12 @@ public class Customer {
     }
     public void setMotherName(String motherName) {
         this.motherName = motherName;
+    }
+    public String getMpin() { 
+        return mpin; 
+    }
+    
+    public void setMpin(String mpin) { 
+        this.mpin = mpin; 
     }
 }

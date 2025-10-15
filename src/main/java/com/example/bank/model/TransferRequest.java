@@ -7,6 +7,7 @@ public class TransferRequest {
     private double amount;
     private String modeOfTransaction;
     private String description;
+    private String mpin;
 
     
     public String getSenderAccountNumber() {
@@ -43,4 +44,6 @@ public class TransferRequest {
     public void setDescription(String description) {
         this.description = description;
     }
+    public String getMpin() { return mpin; }
+    public void setMpin(String mpin) { this.mpin = mpin; }
 }

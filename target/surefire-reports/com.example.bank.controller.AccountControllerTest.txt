@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.example.bank.controller.AccountControllerTest
 -------------------------------------------------------------------------------
-Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.383 s -- in com.example.bank.controller.AccountControllerTest
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.521 s -- in com.example.bank.controller.AccountControllerTest

@@ -2,7 +2,8 @@ package com.example.bank.controller;
 
 import com.example.bank.model.Customer;
 import com.example.bank.db.DBConnection;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -12,68 +13,118 @@ import java.sql.*;
 @Path("/customer")
 public class CustomerController {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CustomerController.class);
+    
+
+
+    @POST
+    @Path("/login") 
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response login(Customer loginRequest) { 
+        // SQL checks if a row exists with the matching username AND password
+        String sql = "SELECT customer_id, customer_name FROM customer_details WHERE username=? AND password=?";
+
+        // Basic validation
+        if (loginRequest.getUsername() == null || loginRequest.getPassword() == null) {
+            return Response.status(400).entity("Username and password are required.").build();
+        }
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, loginRequest.getUsername());
+            ps.setString(2, loginRequest.getPassword());
+            
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                // Authentication Successful: Return a minimal success response
+                Customer authenticatedUser = new Customer();
+                authenticatedUser.setCustomerId(rs.getInt("customer_id"));
+                authenticatedUser.setCustomerName(rs.getString("customer_name"));
+                
+                // Return 200 OK with the user's data
+                return Response.ok(authenticatedUser).build(); 
+            } else {
+                // Authentication Failed
+                return Response.status(401).entity("Invalid username or password.").build();
+            }
+
+        } catch (SQLException e) {
+            return Response.status(500).entity("Server authentication error.").build();
+        }
+    }
+
     // 1. POST: Create customer
-	@POST
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response createCustomer(Customer customer) {
-	    String checkSql = "SELECT COUNT(*) FROM customer_details WHERE username=? OR email=? OR aadhar_number=?";
-	    String insertSql = "INSERT INTO customer_details " +
-	            "(customer_name, username, password, aadhar_number, permanent_address, state, country, city, email, phone_number, status, dob, age, gender, father_name, mother_name) " +
-	            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response createCustomer(Customer customer) {
+        String checkSql = "SELECT COUNT(*) FROM customer_details WHERE username=? OR email=? OR aadhar_number=?";
+        
+        String insertSql = "INSERT INTO customer_details " +
+                    "(customer_name, username, password, aadhar_number, permanent_address, state, country, city, email, phone_number, status, dob, age, gender, father_name, mother_name, mpin) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; 
 
-	    // Basic validations
-	    if (customer.getPhoneNumber() == null || !customer.getPhoneNumber().matches("\\d{10}")) {
-	        return Response.status(Response.Status.BAD_REQUEST).entity("Invalid phone number").build();
-	    }
-	    if (customer.getEmail() == null || !customer.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-	        return Response.status(Response.Status.BAD_REQUEST).entity("Invalid email").build();
-	    }
+        // --- 1. Validation Checks ---
+        if (customer.getPhoneNumber() == null || !customer.getPhoneNumber().matches("\\d{10}")) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Invalid 10-digit phone number").build();
+        }
+        if (customer.getEmail() == null || !customer.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Invalid email format").build();
+        }
+        if (customer.getMpin() == null || !customer.getMpin().matches("^\\d{4}$")) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("MPIN must be exactly 4 digits").build();
+        }
 
-	    try (Connection conn = DBConnection.getConnection()) {
-	        //  Duplicate check
-	        try (PreparedStatement checkPs = conn.prepareStatement(checkSql)) {
-	            checkPs.setString(1, customer.getUsername());
-	            checkPs.setString(2, customer.getEmail());
-	            checkPs.setString(3, customer.getAadharNumber());
-	            ResultSet rsCheck = checkPs.executeQuery();
-	            if (rsCheck.next() && rsCheck.getInt(1) > 0) {
-	              
-	                return Response.status(500).entity("Duplicate customer").build();
-	            }
-	        }
+        try (Connection conn = DBConnection.getConnection()) {
+            // 2. Duplicate Check
+            try (PreparedStatement checkPs = conn.prepareStatement(checkSql)) {
+                checkPs.setString(1, customer.getUsername());
+                checkPs.setString(2, customer.getEmail());
+                checkPs.setString(3, customer.getAadharNumber());
+                ResultSet rsCheck = checkPs.executeQuery();
+                if (rsCheck.next() && rsCheck.getInt(1) > 0) {
+                    LOGGER.warn("Attempt to create duplicate customer: {}", customer.getUsername());
+                    return Response.status(500).entity("Duplicate username, email, or aadhar number exists.").build();
+                }
+            }
 
-	       
-	        try (PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
-	            ps.setString(1, customer.getCustomerName());
-	            ps.setString(2, customer.getUsername());
-	            ps.setString(3, customer.getPassword());
-	            ps.setString(4, customer.getAadharNumber());
-	            ps.setString(5, customer.getPermanentAddress());
-	            ps.setString(6, customer.getState());
-	            ps.setString(7, customer.getCountry());
-	            ps.setString(8, customer.getCity());
-	            ps.setString(9, customer.getEmail());
-	            ps.setString(10, customer.getPhoneNumber());
-	            ps.setString(11, customer.getStatus());
-	            ps.setDate(12, customer.getDob());
-	            ps.setInt(13, customer.getAge());
-	            ps.setString(14, customer.getGender());
-	            ps.setString(15, customer.getFatherName());
-	            ps.setString(16, customer.getMotherName());
+            // 3. Insert new record
+            try (PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+                int i = 1;
+                ps.setString(i++, customer.getCustomerName());
+                ps.setString(i++, customer.getUsername());
+                ps.setString(i++, customer.getPassword());
+                ps.setString(i++, customer.getAadharNumber());
+                ps.setString(i++, customer.getPermanentAddress());
+                ps.setString(i++, customer.getState());
+                ps.setString(i++, customer.getCountry());
+                ps.setString(i++, customer.getCity());
+                ps.setString(i++, customer.getEmail());
+                ps.setString(i++, customer.getPhoneNumber());
+                ps.setString(i++, customer.getStatus());
+                ps.setDate(i++, customer.getDob());
+                ps.setInt(i++, customer.getAge()); 
+                ps.setString(i++, customer.getGender());
+                ps.setString(i++, customer.getFatherName());
+                ps.setString(i++, customer.getMotherName());
+                ps.setString(i++, customer.getMpin()); 
 
-	            ps.executeUpdate();
-	            ResultSet rs = ps.getGeneratedKeys();
-	            if (rs.next()) {
-	                customer.setCustomerId(rs.getInt(1));
-	            }
-	            return Response.status(201).entity(customer).build();
-	        }
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return Response.status(500).entity("Error: " + e.getMessage()).build();
-	    }
-	}
+                ps.executeUpdate();
+                ResultSet rs = ps.getGeneratedKeys();
+                if (rs.next()) {
+                    customer.setCustomerId(rs.getInt(1));
+                }
+                LOGGER.info("Customer created successfully with ID: {}", customer.getCustomerId());
+                return Response.status(201).entity(customer).build();
+            }
+        } catch (SQLException e) {
+            LOGGER.error("SQL Error during customer creation.", e);
+            return Response.status(500).entity("Database Error: " + e.getMessage()).build();
+        }
+    }
 
 
     // 2. GET: Fetch customer by ID
@@ -90,23 +141,6 @@ public class CustomerController {
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 Customer c = new Customer();
-                c.setCustomerId(rs.getInt("customer_id"));
-                c.setCustomerName(rs.getString("customer_name"));
-                c.setUsername(rs.getString("username"));
-                c.setPassword(rs.getString("password"));
-                c.setAadharNumber(rs.getString("aadhar_number"));
-                c.setPermanentAddress(rs.getString("permanent_address"));
-                c.setState(rs.getString("state"));
-                c.setCountry(rs.getString("country"));
-                c.setCity(rs.getString("city"));
-                c.setEmail(rs.getString("email"));
-                c.setPhoneNumber(rs.getString("phone_number"));
-                c.setStatus(rs.getString("status"));
-                c.setDob(rs.getDate("dob"));
-                c.setAge(rs.getInt("age"));
-                c.setGender(rs.getString("gender"));
-                c.setFatherName(rs.getString("father_name"));
-                c.setMotherName(rs.getString("mother_name"));
 
                 return Response.ok(c).build();
             } else {
@@ -114,7 +148,7 @@ public class CustomerController {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Error fetching customer ID {}.", id, e);
             return Response.status(500).entity("Error: " + e.getMessage()).build();
         }
     }
@@ -125,42 +159,46 @@ public class CustomerController {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateCustomer(@PathParam("id") int id, Customer customer) {
-        String sql = "UPDATE customer_details SET customer_name=?, username=?, password=?, aadhar_number=?, permanent_address=?, state=?, country=?, city=?, email=?, phone_number=?, status=?, dob=?, age=?, gender=?, father_name=?, mother_name=? WHERE customer_id=?";
+        String sql = "UPDATE customer_details SET customer_name=?, username=?, password=?, aadhar_number=?, permanent_address=?, state=?, country=?, city=?, email=?, phone_number=?, status=?, dob=?, age=?, gender=?, father_name=?, mother_name=?, mpin=? WHERE customer_id=?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, customer.getCustomerName());
-            ps.setString(2, customer.getUsername());
-            ps.setString(3, customer.getPassword());
-            ps.setString(4, customer.getAadharNumber());
-            ps.setString(5, customer.getPermanentAddress());
-            ps.setString(6, customer.getState());
-            ps.setString(7, customer.getCountry());
-            ps.setString(8, customer.getCity());
-            ps.setString(9, customer.getEmail());
-            ps.setString(10, customer.getPhoneNumber());
-            ps.setString(11, customer.getStatus());
-            ps.setDate(12, customer.getDob());
-            ps.setInt(13, customer.getAge());
-            ps.setString(14, customer.getGender());
-            ps.setString(15, customer.getFatherName());
-            ps.setString(16, customer.getMotherName());
-            ps.setInt(17, id);
+            int i = 1;
+            ps.setString(i++, customer.getCustomerName());
+            ps.setString(i++, customer.getUsername());
+            ps.setString(i++, customer.getPassword());
+            ps.setString(i++, customer.getAadharNumber());
+            ps.setString(i++, customer.getPermanentAddress());
+            ps.setString(i++, customer.getState());
+            ps.setString(i++, customer.getCountry());
+            ps.setString(i++, customer.getCity());
+            ps.setString(i++, customer.getEmail());
+            ps.setString(i++, customer.getPhoneNumber());
+            ps.setString(i++, customer.getStatus());
+            ps.setDate(i++, customer.getDob());
+            ps.setInt(i++, customer.getAge());
+            ps.setString(i++, customer.getGender());
+            ps.setString(i++, customer.getFatherName());
+            ps.setString(i++, customer.getMotherName());
+            ps.setString(i++, customer.getMpin());
+            ps.setInt(i++, id);
 
             int rows = ps.executeUpdate();
             if (rows > 0) {
+                LOGGER.info("Customer ID {} updated successfully.", id);
                 return Response.ok("Customer updated").build();
             } else {
                 return Response.status(404).entity("Customer not found").build();
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Error updating customer ID {}.", id, e);
             return Response.status(500).entity("Error: " + e.getMessage()).build();
         }
     }
-
+    
+   
     // 4. DELETE: Delete customer
     @DELETE
     @Path("/{id}")
@@ -179,9 +217,12 @@ public class CustomerController {
                 return Response.status(404).entity("Customer not found").build();
             }
 
+
         } catch (Exception e) {
             e.printStackTrace();
             return Response.status(500).entity("Error: " + e.getMessage()).build();
         }
     }
+
+    
 }

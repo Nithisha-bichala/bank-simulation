@@ -77,7 +77,7 @@ public class TransactionController {
         }
 
         StringBuilder csv = new StringBuilder();
-        String SEP = ","; // 💡 Changed separator to COMMA
+        String SEP = ","; 
         String NEWLINE = "\n";
         
         csv.append("sep=,").append(NEWLINE);
@@ -122,13 +122,14 @@ public class TransactionController {
     public Response transfer(TransferRequest req) {
         try {
             
-            service.transferFunds(
-                req.getSenderAccountNumber(), 
-                req.getReceiverAccountNumber(), 
-                req.getAmount(),
-                req.getModeOfTransaction(),
-                req.getDescription()
-            );
+            		service.transferFunds(
+                            req.getSenderAccountNumber(),
+                            req.getReceiverAccountNumber(),
+                            req.getAmount(),
+                            req.getModeOfTransaction(),
+                            req.getDescription(),
+                            req.getMpin() 
+                        );
             return Response.ok("Transfer successful").build();
         } catch (Exception e) {
            

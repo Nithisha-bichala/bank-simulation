@@ -12,8 +12,9 @@ public interface TransactionService {
     Transaction withdraw(Transaction tx) throws SQLException, InsufficientFundsException; 
 
     List<Transaction> getTransactionsByAccountNumber(String accountNumber) throws SQLException;
-
+    
     void transferFunds(String senderAccountNumber, String receiverAccountNumber, 
-                       double amount, String mode, String description) 
-            throws SQLException, InsufficientFundsException;
+            double amount, String mode, String description, String mpin) 
+            			throws SQLException, InsufficientFundsException;
+   
 }

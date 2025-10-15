@@ -99,19 +99,6 @@ public class Account {
 
     @Override
     public String toString() {
-        return "Account{" +
-                "accountId=" + accountId +
-                ", customerId=" + customerId +
-                ", accountType='" + accountType + '\'' +
-                ", bankName='" + bankName + '\'' +
-                ", branch='" + branch + '\'' +
-                ", balance=" + balance +
-                ", status='" + status + '\'' +
-                ", accountNumber='" + accountNumber + '\'' +
-                ", ifscCode='" + ifscCode + '\'' +
-                ", nameOnAccount='" + nameOnAccount + '\'' +
-                ", phoneLinkedWithBank='" + phoneLinkedWithBank + '\'' +
-                ", savingAmount=" + savingAmount +
-                '}';
+        return ""; 
     }
 }

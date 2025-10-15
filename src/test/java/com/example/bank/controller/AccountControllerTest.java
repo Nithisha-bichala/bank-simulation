@@ -85,7 +85,7 @@ class AccountControllerTest {
         
         // 4. Stub Generated Keys Behavior: Returns 101
         when(mockGeneratedKeysRs.next()).thenReturn(true).thenReturn(false); 
-        when(mockGeneratedKeysRs.getInt(1)).thenReturn(101); // The ID we want
+        when(mockGeneratedKeysRs.getInt(1)).thenReturn(101); 
 
         Response resp = controller.createAccount(a);
         
@@ -101,7 +101,7 @@ class AccountControllerTest {
     // Fetch existing account
     @Test
     void testGetAccount_Valid() throws SQLException {
-        // GET calls prepareStatement(String sql) -> returns mockCheckPs
+        // GET calls prepareStatement(String sql)
         when(mockResultSet.next()).thenReturn(true).thenReturn(false);
         when(mockResultSet.getInt("account_id")).thenReturn(202);
         when(mockResultSet.getString("account_number")).thenReturn("ACC10002");

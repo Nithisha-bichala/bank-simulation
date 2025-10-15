@@ -30,6 +30,7 @@ public class Transaction {
     private String receiverBy;
     private String transactionType;   
     private String modeOfTransaction; 
+    private String mpin; 
 
    
  // Getters & Setters
@@ -122,6 +123,13 @@ public class Transaction {
     }
     public void setModeOfTransaction(String modeOfTransaction) {
         this.modeOfTransaction = modeOfTransaction;
+    }
+    public String getMpin() { 
+        return mpin; 
+    }
+    
+    public void setMpin(String mpin) { 
+        this.mpin = mpin; 
     }
 
     

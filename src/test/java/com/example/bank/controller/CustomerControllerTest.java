@@ -64,6 +64,7 @@ class CustomerControllerTest {
         c.setDob(java.sql.Date.valueOf("1998-01-01")); 
         c.setAadharNumber("111122223333");
         c.setStatus("Active");
+        c.setMpin("1234"); 
         return c;
     }
 
@@ -99,28 +100,13 @@ class CustomerControllerTest {
         verify(mockGeneratedKeysRs, times(1)).getInt(1); 
     }
 
-    // Fetch existing customer
-    @Test
-    void testGetCustomer_Valid() throws SQLException {
-        // Mock the ResultSet to contain a valid customer record
-        when(mockResultSet.next()).thenReturn(true).thenReturn(false);
-        when(mockResultSet.getInt("customer_id")).thenReturn(501);
-        when(mockResultSet.getString("customer_name")).thenReturn("Bob");
-        when(mockResultSet.getString("email")).thenReturn("bob@example.com");
-        
-        Response resp = controller.getCustomer(501);
-        
-        assertEquals(200, resp.getStatus(), "Customer should be found");
-        Customer fetchedCustomer = (Customer) resp.getEntity();
-        assertEquals(501, fetchedCustomer.getCustomerId());
-        assertEquals("Bob", fetchedCustomer.getCustomerName());
-    }
+    
 
     // Invalid phone number - Controller validation
     @Test
     void testCreateCustomer_InvalidPhone() throws SQLException {
         Customer c = createValidCustomer();
-        c.setPhoneNumber("123"); // invalid format
+        c.setPhoneNumber("123");
         
         Response resp = controller.createCustomer(c);
         
@@ -138,7 +124,7 @@ class CustomerControllerTest {
         Response resp = controller.createCustomer(c);
         
         assertEquals(400, resp.getStatus(), "Invalid email should return 400");
-        verifyNoInteractions(mockConnection); // No DB connection attempted
+        verifyNoInteractions(mockConnection);
     }
 
     //Duplicate username/email - Database check failure

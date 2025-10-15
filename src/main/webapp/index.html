@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Simulator UI </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+    label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        color: #374151; 
+    }
+
+    input,
+    select,
+    textarea {
+        display: block;
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        box-sizing: border-box;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+</style>
+    
+    <style>
+        .active-tab {
+            background-color: #3b82f6; 
+            color: white;
+        }
+        .input-field {
+          
+            @apply mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm;
+        }
+        .form-group {
+           
+            @apply block text-sm font-medium text-gray-700 mb-1; 
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Global Success/Error Notification Pop-up -->
+    <div id="alert-box" class="fixed top-5 right-5 p-4 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0 hidden" role="alert">
+        <p id="alert-message" class="font-medium"></p>
+    </div>
+
+    <div class="max-w-6xl mx-auto py-10">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">🏦 Bank Simulator</h1>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white p-4 rounded-xl shadow-md mb-8">
+            <div class="flex space-x-2">
+                <button onclick="showView('login')" id="tab-login" class="tab-button px-4 py-2 font-medium text-sm rounded-lg hover:bg-gray-200 transition">Log In</button>
+                <button onclick="showView('customer')" id="tab-customer" class="tab-button px-4 py-2 font-medium text-sm rounded-lg hover:bg-gray-200 transition">Register</button>
+                <button onclick="showView('account')" id="tab-account" class="tab-button px-4 py-2 font-medium text-sm rounded-lg hover:bg-gray-200 transition" style="display:none;">Account Creation</button>
+                <button onclick="showView('transaction')" id="tab-transaction" class="tab-button px-4 py-2 font-medium text-sm rounded-lg hover:bg-gray-200 transition" style="display:none;">Transactions</button>
+                <button onclick="handleLogout()" id="tab-logout" class="tab-button px-4 py-2 font-medium text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition" style="display:none;">Log Out</button>
+            </div>
+        </div>
+
+        <!-- --- VIEWS CONTAINER --- -->
+        <div id="views-container">
+
+            <!-- View 0: Login/Authentication -->
+            <div id="view-login" class="view bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-6">User Login</h2>
+                <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div><label for="login_username" class="form-group">Username</label><input type="text" id="login_username" required class="input-field"></div>
+                    <div><label for="login_password" class="form-group">Password</label><input type="password" id="login_password" required class="input-field"></div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition">Log In</button>
+                </form>
+                <p class="mt-4 text-center">New user? <a href="#" onclick="showView('customer')" class="text-indigo-600 hover:underline">Register Now</a></p>
+            </div>
+
+            <!-- View 1: Customer Creation (Registration) - Full Fields -->
+            <div id="view-customer" class="view bg-white p-6 rounded-xl shadow-lg hidden">
+                <h2 class="text-2xl font-semibold mb-6">Create New Customer (Registration)</h2>
+                <form id="form-customer" onsubmit="createCustomer(event)" class="space-y-6">
+                    
+                    <h3 class="text-lg font-bold text-blue-700">Login & Primary Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Primary Details -->
+                        <div><label for="c_name" class="form-group">Full Name</label > <br><input type="text" id="c_name" required class="input-field"></div>
+                        <div><label for="c_username" class="form-group">Username</label><br><input type="text" id="c_username" required class="input-field"></div>
+                        <div><label for="c_password" class="form-group">Password</label><br><input type="password" id="c_password" required class="input-field"></div>
+                        
+                        <!-- Contact & Security -->
+                        <div><label for="c_email" class="form-group">Email</label><br><input type="email" id="c_email" required class="input-field"></div>
+                        <div><label for="c_phone" class="form-group">Phone (10 Digits)</label><br><input type="text" id="c_phone" maxlength="10" pattern="\d{10}" required class="input-field"></div>
+                        <div><label for="c_mpin" class="form-group">MPIN (4 Digits)</label><br><input type="password" id="c_mpin" maxlength="4" pattern="\d{4}" required class="input-field text-center" placeholder="1234"></div>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-blue-700 border-t pt-4">Identification & Demographics</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label for="c_aadhar" class="form-group">Aadhar Number</label><br><input type="text" id="c_aadhar" required class="input-field"></div>
+                        <div><label for="c_dob" class="form-group">Date of Birth</label><br><input type="date" id="c_dob" required class="input-field"></div>
+                        <div><label for="c_gender" class="form-group">Gender</label>
+                            <select id="c_gender" class="input-field">
+                                <option value="MALE">Male</option>
+                                <option value="FEMALE">Female</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Address -->
+                    <h3 class="text-lg font-bold text-blue-700 border-t pt-4">Address & Family Details</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label for="c_address" class="form-group">Permanent Address</label><input type="text" id="c_address" required class="input-field"></div>
+                        <div><label for="c_city" class="form-group">City</label><input type="text" id="c_city" required class="input-field"></div>
+                        <div><label for="c_state" class="form-group">State</label><input type="text" id="c_state" required class="input-field"></div>
+                        <div><label for="c_country" class="form-group">Country</label><input type="text" id="c_country" required class="input-field"></div>
+                    </div>
+
+                    <!-- Family & Status -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label for="c_father" class="form-group">Father's Name</label><input type="text" id="c_father" class="input-field"></div>
+                        <div><label for="c_mother" class="form-group">Mother's Name</label><input type="text" id="c_mother" class="input-field"></div>
+                        <div><label for="c_status" class="form-group">Account Status</label>
+                            <select id="c_status" class="input-field">
+                                <option value="ACTIVE">ACTIVE</option>
+                                <option value="INACTIVE">INACTIVE</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition">Register Customer</button>
+                </form>
+            </div>
+
+            <!-- View 2: Account Creation --->
+            <div id="view-account" class="view bg-white p-6 rounded-xl shadow-lg hidden">
+                <h2 class="text-2xl font-semibold mb-6">Open New Account (Full Details)</h2>
+                <form id="form-account" onsubmit="createAccount(event)" class="space-y-6">
+                    
+                    <h3 class="text-lg font-bold text-blue-700">Account & Initial Balance</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label for="a_custId" class="form-group">Customer ID</label><input type="number" id="a_custId" required class="input-field" placeholder="Owner's ID"></div>
+                        <div><label for="a_accNumber" class="form-group">Account Number</label><input type="text" id="a_accNumber" placeholder="e.g., ACC001" required class="input-field"></div>
+                        
+                        <div><label for="a_type" class="form-group">Account Type</label>
+                            <select id="a_type" class="input-field">
+                                <option value="Savings">Savings</option>
+                                <option value="Current">Current</option>
+                            </select>
+                        </div>
+                        <div><label for="a_initialBalance" class="form-group">Initial Balance</label><input type="number" id="a_initialBalance" value="100.00" step="0.01" required class="input-field"></div>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-blue-700 border-t pt-4">Bank & Operational Details</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label for="a_bankName" class="form-group">Bank Name</label><input type="text" id="a_bankName" value="Simulator Bank" required class="input-field"></div>
+                        <div><label for="a_branch" class="form-group">Branch Name</label><input type="text" id="a_branch" value="Main Branch" required class="input-field"></div>
+                        <div><label for="a_ifsc" class="form-group">IFSC Code</label><input type="text" id="a_ifsc" value="SIMU0001" required class="input-field"></div>
+                        
+                        <div><label for="a_nameOnAcc" class="form-group">Name On Account</label><input type="text" id="a_nameOnAcc" required class="input-field"></div>
+                        <div><label for="a_phoneLinked" class="form-group">Phone Linked</label><input type="text" id="a_phoneLinked" required class="input-field"></div>
+                        <div><label for="a_savingAmount" class="form-group">Saving/Fixed Deposit Amount</label><input type="number" id="a_savingAmount" value="0.00" step="0.01" required class="input-field"></div>
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition">Create Account</button>
+                </form>
+            </div>
+
+            <!-- View 3: Transactions -->
+            <div id="view-transaction" class="view bg-white p-6 rounded-xl shadow-lg hidden">
+                <h2 class="text-2xl font-semibold mb-6">Process Transactions (Secured by MPIN)</h2>
+                <form id="form-transaction" onsubmit="handleTransaction(event)" class="space-y-4">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label for="t_accNumber" class="form-group">Your Account Number</label><input type="text" id="t_accNumber" placeholder="e.g., ACC001" required class="input-field"></div>
+                        <div><label for="t_mpin" class="form-group">Your MPIN (4 Digits)</label><input type="password" id="t_mpin" maxlength="4" pattern="\d{4}" required class="input-field text-center"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label for="t_amount" class="form-group">Amount</label><input type="number" id="t_amount" value="50.00" step="0.01" required class="input-field"></div>
+                        <div><label for="t_type" class="form-group">Transaction Type</label>
+                            <select id="t_type" onchange="toggleTransferFields()" required class="input-field">
+                                <option value="deposit">Deposit</option>
+                                <option value="withdraw">Withdraw</option>
+                                <option value="transfer">Transfer</option>
+                            </select>
+                        </div>
+                        <div><label for="t_description" class="form-group">Transaction Description</label><input type="text" id="t_description" required class="input-field" placeholder="e.g., Bill Payment / Cash Deposit"></div>
+                    </div>
+
+                    <div id="transfer-fields" class="space-y-4 hidden border-t pt-4">
+                        <h3 class="font-semibold text-gray-600">Transfer Details</h3>
+                        <div>
+                            <label for="t_receiverAccNumber" class="form-group">Receiver Account Number</label>
+                            <input type="text" id="t_receiverAccNumber" class="input-field" placeholder="e.g., ACC002">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="t_submit_btn" class="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition">Process Transaction</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+ 
+    <script>
+        const API_BASE = 'http://localhost:8082/bank-simulator/api';
+        const AUTH_KEY = 'bankSimIsLoggedIn';
+        let isAuthenticated = false; 
+
+        function calculateAge(dobString) {
+            const today = new Date();
+            const birthDate = new Date(dobString);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+
+        function showAlert(message, type = 'success') {
+            const alertBox = document.getElementById('alert-box');
+            const alertMessage = document.getElementById('alert-message');
+            
+            alertMessage.textContent = message;
+            
+            alertBox.classList.remove('bg-green-100', 'border-green-500', 'bg-red-100', 'border-red-500');
+            alertMessage.classList.remove('text-green-800', 'text-red-800');
+
+            if (type === 'success') {
+                alertBox.classList.add('bg-green-100', 'border-green-500');
+                alertMessage.classList.add('text-green-800');
+            } else {
+                alertBox.classList.add('bg-red-100', 'border-red-500');
+                alertMessage.classList.add('text-red-800');
+            }
+
+            alertBox.classList.remove('opacity-0', 'hidden');
+            setTimeout(() => {
+                alertBox.classList.add('opacity-0');
+                setTimeout(() => { alertBox.classList.add('hidden'); }, 300);
+            }, 5000);
+        }
+        
+        function updateNavVisibility(loggedIn) {
+            const visibleIfLoggedIn = ['tab-account', 'tab-transaction', 'tab-logout'];
+            const hiddenIfLoggedIn = ['tab-login'];
+
+            visibleIfLoggedIn.forEach(id => {
+                const tab = document.getElementById(id);
+                if (tab) tab.style.display = loggedIn ? 'inline-block' : 'none';
+            });
+            hiddenIfLoggedIn.forEach(id => {
+                const tab = document.getElementById(id);
+                if (tab) tab.style.display = loggedIn ? 'none' : 'inline-block';
+            });
+        }
+        
+        function showView(viewName) {
+            if (viewName !== 'login' && viewName !== 'customer' && !isAuthenticated) {
+                return showView('login'); 
+            }
+            
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active-tab');
+            });
+            const currentTab = document.getElementById(`tab-${viewName}`);
+            if (currentTab) currentTab.classList.add('active-tab');
+        }
+
+        function toggleTransferFields() {
+            const type = document.getElementById('t_type').value;
+            const fields = document.getElementById('transfer-fields');
+            const receiverInput = document.getElementById('t_receiverAccNumber');
+
+            if (type === 'transfer') {
+                fields.classList.remove('hidden');
+                receiverInput.required = true;
+            } else {
+                fields.classList.add('hidden');
+                receiverInput.required = false;
+            }
+        }
+
+
+        async function createCustomer(event) {
+            event.preventDefault();
+            const dob = document.getElementById('c_dob').value;
+            const age = calculateAge(dob);
+
+            const payload = {
+                customerName: document.getElementById('c_name').value,
+                username: document.getElementById('c_username').value,
+                password: document.getElementById('c_password').value,
+                mpin: document.getElementById('c_mpin').value, 
+                
+                email: document.getElementById('c_email').value,
+                phoneNumber: document.getElementById('c_phone').value,
+                aadharNumber: document.getElementById('c_aadhar').value,
+                dob: dob,
+                age: age, 
+                gender: document.getElementById('c_gender').value,               
+                 permanentAddress: document.getElementById('c_address').value,
+                city: document.getElementById('c_city').value,
+                state: document.getElementById('c_state').value,
+                country: document.getElementById('c_country').value,
+                fatherName: document.getElementById('c_father').value,
+                motherName: document.getElementById('c_mother').value,
+                status: document.getElementById('c_status').value, 
+            };
+
+            try {
+                const response = await fetch(API_BASE + '/customer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const text = await response.text();
+                
+                if (response.ok && response.status === 201) {
+                    const data = JSON.parse(text);
+                    showAlert(`Customer  created! `, 'success');
+                    showView('login'); 
+                } else {
+                    try {
+                         const data = JSON.parse(text);
+                         showAlert(`Registration Failed: ${data.entity || data.message || JSON.stringify(data)}`, 'error');
+                    } catch {
+                         showAlert(`Registration Failed: ${text}`, 'error');
+                    }
+                }
+            } catch (error) {
+                showAlert(`Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function createAccount(event) {
+            event.preventDefault();
+            
+            const payload = {
+                "customer_id": document.getElementById('a_custId').value, 
+                "account_number": document.getElementById('a_accNumber').value,
+                "balance": parseFloat(document.getElementById('a_initialBalance').value),
+                "account_type": document.getElementById('a_type').value, 
+                "bank_name": document.getElementById('a_bankName').value,
+                "branch": document.getElementById('a_branch').value, 
+                "ifsc_code": document.getElementById('a_ifsc').value,
+                "name_on_account": document.getElementById('a_nameOnAcc').value,
+                "phone_linked_with_bank": document.getElementById('a_phoneLinked').value, 
+                "saving_amount": parseFloat(document.getElementById('a_savingAmount').value),
+                "status": "ACTIVE", 
+            };
+
+            try {
+                const response = await fetch(API_BASE + '/account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const text = await response.text();
+                
+                if (response.ok && response.status === 201) {
+                    const data = JSON.parse(text);
+                    showAlert(`Account  created! `, 'success');
+                } else {
+                    try {
+                         const data = JSON.parse(text);
+                         showAlert(`Account Creation Failed: ${data.entity || data.message || JSON.stringify(data)}`, 'error');
+                    } catch {
+                         showAlert(`Account Creation Failed: ${text}`, 'error');
+                    }
+                }
+            } catch (error) {
+                showAlert(`Network Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('login_username').value;
+            const password = document.getElementById('login_password').value;
+
+            const payload = { username: username, password: password };
+            
+            try {
+                const response = await fetch(API_BASE + '/customer/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const text = await response.text();
+
+                if (response.ok) {
+                    const data = JSON.parse(text);
+                    isAuthenticated = true;
+                    localStorage.setItem(AUTH_KEY, true); 
+                    showAlert(`Welcome back, ${data.customerName}!`, 'success');
+                    showView('transaction'); 
+                    updateNavVisibility(true);
+                } else {
+                    isAuthenticated = false;
+                    try {
+                        const data = JSON.parse(text);
+                        showAlert(`Login Failed: ${data.entity || data.message || 'Invalid credentials.'}`, 'error');
+                    } catch (e) {
+                         showAlert(`Login Failed: Invalid credentials or backend path issue.`, 'error');
+                    }
+                }
+            } catch (error) {
+                showAlert(`Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        function handleLogout() {
+            isAuthenticated = false;
+            localStorage.removeItem(AUTH_KEY);
+            updateNavVisibility(false);
+            showView('login');
+            showAlert("You have been logged out.", 'success');
+        }
+
+        async function handleTransaction(event) {
+            event.preventDefault();
+
+            const type = document.getElementById('t_type').value;
+            const accNumber = document.getElementById('t_accNumber').value;
+            const amount = parseFloat(document.getElementById('t_amount').value);
+            const mpin = document.getElementById('t_mpin').value; 
+            const description = document.getElementById('t_description').value;
+
+            let endpoint = '';
+            let payload = {};
+
+            if (type === 'deposit' || type === 'withdraw') {
+                endpoint = '/transactions/' + type;
+                payload = {
+                    accountNumber: accNumber,
+                    transactionAmount: amount,
+                    mpin: mpin, 
+                    modeOfTransaction: type === 'deposit' ? 'CASH' : 'ATM',
+                    description: description
+                };
+            } else if (type === 'transfer') {
+                const receiverAccNumber = document.getElementById('t_receiverAccNumber').value;
+                endpoint = '/transactions/transfer';
+                payload = {
+                    senderAccountNumber: accNumber,
+                    receiverAccountNumber: receiverAccNumber,
+                    amount: amount,
+                    mpin: mpin, 
+                    modeOfTransaction: 'NEFT',
+                    description: description
+                };
+            }
+            
+            try {
+                const response = await fetch(API_BASE + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const text = await response.text();
+                
+                if (response.ok && (response.status === 201 || response.status === 200)) {
+                    showAlert(`${type.toUpperCase()} Successful!`, 'success');
+                } else {
+                    try {
+                        const data = JSON.parse(text);
+                        showAlert(`Transaction Failed: ${data.entity || data.message || JSON.stringify(data)}`, 'error');
+                    } catch {
+                        showAlert(`Transaction Failed: ${text}`, 'error');
+                    }
+                }
+            } catch (error) {
+                showAlert(`Network Error or Server Unreachable: ${error.message}`, 'error');
+            }
+        }
+        
+        window.onload = () => {
+            isAuthenticated = localStorage.getItem(AUTH_KEY) === 'true'; 
+            
+            if (isAuthenticated) {
+                showView('transaction'); 
+            } else {
+                showView('login'); 
+            }
+            
+            updateNavVisibility(isAuthenticated);
+            toggleTransferFields(); 
+        };
+
+    </script>
+</body>
+</html>

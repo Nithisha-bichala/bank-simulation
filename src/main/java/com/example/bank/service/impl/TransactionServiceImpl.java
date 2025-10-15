@@ -19,7 +19,33 @@ public class TransactionServiceImpl implements TransactionService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TransactionServiceImpl.class);
     
-    private final NotificationService notificationService = new NotificationService(); //  NEW INSTANCE
+    private final NotificationService notificationService = new NotificationService(); 
+    
+    private void checkMpin(Connection conn, String accountNumber, String mpin) throws SQLException {
+        if (mpin == null) {
+            LOGGER.warn("MPIN missing for transaction on account {}", accountNumber);
+            throw new SQLException("MPIN required for this transaction.");
+        }
+        
+        String sql = "SELECT c.mpin FROM customer_details c JOIN account_details a ON c.customer_id = a.customer_id WHERE a.account_number = ?";
+        
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, accountNumber);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                String storedMpin = rs.getString("mpin");
+                if (!mpin.equals(storedMpin)) {
+                    LOGGER.warn("Invalid MPIN provided for account {}", accountNumber);
+                    throw new SQLException("Invalid MPIN provided.");
+                }
+                LOGGER.info("MPIN verified successfully for account {}.", accountNumber);
+            } else {
+                throw new SQLException("Account owner not found for MPIN check.");
+            }
+        }
+    }
+    
     private int getAccountIdByNumber(Connection conn, String accountNumber) throws SQLException {
         String sql = "SELECT account_id FROM account_details WHERE account_number = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -126,6 +152,7 @@ public class TransactionServiceImpl implements TransactionService {
         try{
         	 conn = DBConnection.getConnection();
             conn.setAutoCommit(false);
+            checkMpin(conn, tx.getAccountNumber(), tx.getMpin());
             
             tx.setAccountId(getAccountIdByNumber(conn, tx.getAccountNumber()));
             //  Check balance
@@ -210,7 +237,7 @@ public class TransactionServiceImpl implements TransactionService {
                 Customer customer = getCustomerByAccountId(connEmail, tx.getAccountId());
                 notificationService.sendDebitNotification(customer, tx);
             } catch (SQLException e) {
-            	 LOGGER.error("Email skipped: Could not fetch customer details for account {}.", tx.getAccountNumber(), e); // 💡 ERROR LOG
+            	 LOGGER.error("Email skipped: Could not fetch customer details for account {}.", tx.getAccountNumber(), e); 
             } 
             
             return tx;
@@ -219,7 +246,7 @@ public class TransactionServiceImpl implements TransactionService {
             if (conn != null) {
                 try {
                     conn.rollback();
-                    LOGGER.error("Transaction rolled back for withdrawal attempt on Account {}.", tx.getAccountNumber(), e); // 💡 ERROR LOG
+                    LOGGER.error("Transaction rolled back for withdrawal attempt on Account {}.", tx.getAccountNumber(), e); 
                 } catch (SQLException rollbackEx) {
                     LOGGER.error("Rollback failed.", rollbackEx); 
                 }
@@ -247,7 +274,7 @@ public class TransactionServiceImpl implements TransactionService {
     public List<Transaction> getTransactionsByAccountNumber(String accountNumber) throws SQLException {
         List<Transaction> list = new ArrayList<>();
         
-     //  Select the account number directly in the query
+ 
         String sql = "SELECT t.*, a.account_number FROM transaction_details t " +
                      "JOIN account_details a ON a.account_id = t.account_id " +
                      "WHERE a.account_number=?";
@@ -279,8 +306,6 @@ public class TransactionServiceImpl implements TransactionService {
                 tx.setDescription(rs.getString("description"));
                 tx.setTransactionType(rs.getString("transaction_type"));
                 tx.setModeOfTransaction(rs.getString("mode_of_transaction"));
-                
-                // Set the account number from the result set
                 tx.setAccountNumber(rs.getString("account_number"));
                 tx.setModifiedBy(rs.getString("modified_by"));
                 tx.setReceiverBy(rs.getString("receiver_by"));
@@ -292,7 +317,7 @@ public class TransactionServiceImpl implements TransactionService {
     //  transferFunds
     @Override
     public void transferFunds(String senderAccountNumber, String receiverAccountNumber, 
-                              double amount, String mode, String description) 
+                              double amount, String mode, String description, String mpin) 
             throws SQLException, InsufficientFundsException { // 💡 New Signature
         
        
@@ -300,6 +325,7 @@ public class TransactionServiceImpl implements TransactionService {
             try {
                 conn = DBConnection.getConnection();
                 conn.setAutoCommit(false);
+                checkMpin(conn, senderAccountNumber, mpin);
 
             int senderId = getAccountIdByNumber(conn, senderAccountNumber);
             int receiverId = getAccountIdByNumber(conn, receiverAccountNumber);
@@ -371,7 +397,7 @@ public class TransactionServiceImpl implements TransactionService {
                      if (conn != null) {
                     try {
                         conn.rollback();
-                        LOGGER.error("Transfer rolled back from {} to {}.", senderAccountNumber, receiverAccountNumber, e); // 💡 ERROR LOG
+                        LOGGER.error("Transfer rolled back from {} to {}.", senderAccountNumber, receiverAccountNumber, e); 
                     } catch (SQLException rollbackEx) {
                         LOGGER.error("Rollback failed.", rollbackEx);
                     }
@@ -438,7 +464,6 @@ public class TransactionServiceImpl implements TransactionService {
         }
     }
     
- // Inside TransactionServiceImpl.java
     private Customer getCustomerByAccountId(Connection conn, int accountId) throws SQLException {
         //  Get customer_id from account_details
         String getCustomerIdSql = "SELECT customer_id FROM account_details WHERE account_id = ?";

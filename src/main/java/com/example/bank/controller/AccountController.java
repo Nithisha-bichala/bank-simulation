@@ -26,7 +26,6 @@ public class AccountController {
 	    if (account.getAccountNumber() == null || account.getAccountNumber().trim().isEmpty()) {
 	        return Response.status(Response.Status.BAD_REQUEST).entity("Account number required").build();
 	    }
-	 // Before inserting, add this check:
 	    if (!account.getAccountNumber().matches("^ACC\\d{5}$")) {
 	        return Response.status(400).entity("Invalid account number format").build();
 	    }
